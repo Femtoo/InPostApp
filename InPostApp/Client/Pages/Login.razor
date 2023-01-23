@@ -1,0 +1,66 @@
+﻿@page "/login"
+@using Blazored.LocalStorage
+@using InPostApp.Shared.ModelsDto
+@using Microsoft.AspNetCore.Components.Authorization
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService LocalStorage
+
+<div style="margin-left: 20%; margin-right:20%">
+    <div class="d-inline-block pa-10">
+        <div class="d-block pa-2">
+            <MudTextField @bind-Value="user.Username" Label="Login" Variant="Variant.Outlined" Class="d-block"></MudTextField>
+        </div>
+        <div class="d-block pa-2">
+            <MudTextField @bind-Value="user.Password" Label="Password" Variant="Variant.Outlined" Class="d-block"></MudTextField>
+        </div>
+        <div class="d-block pa-2">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="d-block" OnClick="OnSubmit">Login</MudButton>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="d-block" OnClick="Register">Register</MudButton>
+        <div class="text-danger">
+            <span>@errorMessage</span>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    UserDto user = new UserDto();
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.Name != null)
+        {
+            NavigationManager.NavigateTo($"/shipment/list");
+        }
+    }
+
+    void Register()
+    {
+        NavigationManager.NavigateTo($"/register");
+
+    }
+    async Task OnSubmit()
+    {
+        var result = await Http.PostAsJsonAsync("api/auth/login", user);
+
+        if (!result.IsSuccessStatusCode)
+        {
+            errorMessage = await result.Content.ReadAsStringAsync();
+            user.Username = "";
+            user.Password = "";
+            return;
+        }
+
+        var token = await result.Content.ReadAsStringAsync();
+        await LocalStorage.SetItemAsync("token", token);
+        await AuthStateProvider.GetAuthenticationStateAsync();
+        NavigationManager.NavigateTo($"/shipment/list");
+    }
+}

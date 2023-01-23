@@ -1,0 +1,92 @@
+﻿@page "/shipment/list"
+@using Blazored.LocalStorage
+@using InPostApp.Shared.ModelsDto
+@using Microsoft.AspNetCore.Components.Authorization
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService LocalStorage
+
+<MudTable Items="@shipments" Hover="true" LoadingProgressColor="Color.Info" Style="margin-left: 15%; margin-right: 15%;">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Shipment List</MudText>
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="d-block" OnClick="AddShipment">New Shipment</MudButton>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Shipment Name</MudTh>
+        <MudTh>State</MudTh>
+        <MudTh>Receiver</MudTh>
+        <MudTh>From Locker</MudTh>
+        <MudTh>To Locker</MudTh>
+        @if(isAdmin) {
+            <MudTh>Update State</MudTh>
+        }
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="ShipmentDto" Style="width: 18%">@context.Name</MudTd>
+        <MudTd DataLabel="ShipmentDto" Style="width: 10%">@context.State</MudTd>
+        <MudTd DataLabel="ShipmentDto" Style="width: 18%">@context.Receiver</MudTd>
+        <MudTd DataLabel="ShipmentDto" Style="width: 18%">@context.FromLockerName</MudTd>
+        <MudTd DataLabel="ShipmentDto" Style="width: 18%">@context.ToLockerName</MudTd>
+        @if(isAdmin) {
+            <MudTd>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="d-block" OnClick="() => UpdateState(context.Id)">Update</MudButton>
+                <MudSelect @bind-Value="newState" Label="Select New State" Placeholder="Please Select">
+                    <MudSelectItem Value="@("Posted")">Posted</MudSelectItem>
+                    <MudSelectItem Value="@("Transferring")">Transferring</MudSelectItem>
+                    <MudSelectItem Value="@("Delivered")">Delivered</MudSelectItem>
+                    <MudSelectItem Value="@("Received")">Received</MudSelectItem>
+                </MudSelect>
+            </MudTd>
+        }
+        @*<MudTd DataLabel="" Style="width: 50%">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="d-block" OnClick="() => OnChooseThisLanguageClick(context.Key)">Choose this language</MudButton>
+        </MudTd>*@
+    </RowTemplate>
+</MudTable>
+
+@code {
+    private bool isAdmin = false;
+    List<ShipmentDto>? shipments = new List<ShipmentDto>();
+    private string newState = string.Empty;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.Name != null)
+        {
+            if (user.Identity.Name == "Admin")
+            {
+                isAdmin = true;
+            }
+        }
+
+        shipments = await Http.GetFromJsonAsync<List<ShipmentDto>>("api/Shipment/list");
+    }
+
+    private void AddShipment() {
+        NavigationManager.NavigateTo($"/shipment/add");
+    }
+
+    private async Task UpdateState(int id) {
+        ShipmentDto shipmentUp = new ShipmentDto
+            {
+                Id = id,
+                State = newState
+            };
+
+        var result = await Http.PutAsJsonAsync("api/Shipment/", shipmentUp);
+
+        if (!result.IsSuccessStatusCode)
+        {
+            errorMessage = await result.Content.ReadAsStringAsync();
+            return;
+        }
+
+        shipments.Find(u => u.Id == id).State = newState;
+    }
+}

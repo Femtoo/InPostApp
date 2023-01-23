@@ -1,0 +1,57 @@
+﻿@page "/locker/list"
+@using Blazored.LocalStorage
+@using InPostApp.Shared.ModelsDto
+@using Microsoft.AspNetCore.Components.Authorization
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService LocalStorage
+
+
+<MudTable Items="@lockers" Hover="true" LoadingProgressColor="Color.Info" Style="margin-left: 15%; margin-right: 15%;">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Lockers List</MudText>
+        <MudSpacer />
+        @if(isAdmin) {
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="d-block" OnClick="AddLocker">Add Locker</MudButton>
+        }
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Locker Name</MudTh>
+        <MudTh>Locker City</MudTh>
+        @*<MudTh></MudTh>*@
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="LockerDto" Style="width: 50%">@context.Name</MudTd>
+        <MudTd DataLabel="LockerDto" Style="width: 50%">@context.City</MudTd>
+        @*<MudTd DataLabel="" Style="width: 50%">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="d-block" OnClick="() => OnChooseThisLanguageClick(context.Key)">Choose this language</MudButton>
+        </MudTd>*@
+    </RowTemplate>
+</MudTable>
+
+@code {
+    List<LockerDto>? lockers = new List<LockerDto>();
+    private bool isAdmin = false;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.Name != null)
+        {
+            if(user.Identity.Name == "Admin") {
+                isAdmin = true;
+            }
+        }
+
+        lockers = await Http.GetFromJsonAsync<List<LockerDto>>("api/Locker");
+    }
+
+    void AddLocker()
+    {
+        NavigationManager.NavigateTo($"/locker/add");
+    }
+}

@@ -1,0 +1,48 @@
+﻿@page "/locker/add"
+@using Blazored.LocalStorage
+@using InPostApp.Shared.ModelsDto
+@using Microsoft.AspNetCore.Components.Authorization
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<div style="margin-left: 20%; margin-right:20%">
+    <div class="d-inline-block pa-10">
+        <div class="d-block pa-2">
+            <MudTextField @bind-Value="locker.Name" Label="Name" Variant="Variant.Outlined" Class="d-block"></MudTextField>
+        </div>
+        <div class="d-block pa-2">
+            <MudTextField @bind-Value="locker.City" Label="City" Variant="Variant.Outlined" Class="d-block"></MudTextField>
+        </div>
+        <div class="d-block pa-2">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="d-block" OnClick="OnSubmit">Add locker</MudButton>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="d-block" OnClick="LockerList">Back To List</MudButton>
+        <div class="text-danger">
+            <span>@errorMessage</span>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    LockerDto locker = new LockerDto();
+    private string errorMessage = string.Empty;
+
+    void LockerList()
+    {
+        NavigationManager.NavigateTo($"/locker/list");
+
+    }
+    async Task OnSubmit()
+    {
+        var result = await Http.PostAsJsonAsync("api/Locker/", locker);
+
+        if (!result.IsSuccessStatusCode)
+        {
+            errorMessage = await result.Content.ReadAsStringAsync();
+            return;
+        }
+
+        NavigationManager.NavigateTo($"/locker/list");
+    }
+}

@@ -1,0 +1,43 @@
+﻿@inherits LayoutComponentBase
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService LocalStorage
+
+<PageTitle>InPostApp</PageTitle>
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Color="Color.Primary" Fixed="false">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="Menu" />
+        <MudIconButton Icon="@Icons.Material.Filled.Lock" Color="Color.Inherit" OnClick="Locker" />
+        <MudSpacer />
+        <MudIconButton Icon="@Icons.Material.Filled.Login" Color="Color.Inherit" OnClick="Logout" />
+    </MudAppBar>
+
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+
+    private void Menu()
+    {
+        NavigationManager.NavigateTo("");
+    }
+
+    private async Task Logout()
+    {
+        await LocalStorage.SetItemAsync("token", "");
+        await AuthStateProvider.GetAuthenticationStateAsync();
+        NavigationManager.NavigateTo($"/login");
+    }
+
+    private void Locker()
+    {
+        NavigationManager.NavigateTo("/locker/list");
+    }
+}

@@ -1,0 +1,88 @@
+﻿@page "/shipment/add"
+@using Blazored.LocalStorage
+@using InPostApp.Shared.ModelsDto
+@using Microsoft.AspNetCore.Components.Authorization
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService LocalStorage
+
+<div style="margin-left: 20%; margin-right:20%">
+    <div class="d-inline-block pa-10">
+        <div class="d-block pa-2">
+            <MudTextField @bind-Value="shipment.Name" Label="Shipment Name" Variant="Variant.Outlined" Class="d-block"></MudTextField>
+        </div>
+        <MudSelect @bind-Value="shipment.Receiver" Label="Receiver" AdornmentColor="Color.Secondary">
+            @foreach (var item in users)
+            {
+                <MudSelectItem Value="@item">@item</MudSelectItem>
+            }
+        </MudSelect>
+        <MudSelect @bind-Value="shipment.FromLockerName" Label="From Locker" AdornmentColor="Color.Secondary">
+            @foreach (var item in lockers)
+            {
+                <MudSelectItem Value="@item">@item</MudSelectItem>
+            }
+        </MudSelect>
+        <MudSelect @bind-Value="shipment.ToLockerName" Label="To Locker" AdornmentColor="Color.Secondary">
+            @foreach (var item in lockers)
+            {
+                <MudSelectItem Value="@item">@item</MudSelectItem>
+            }
+        </MudSelect>
+        <div class="d-block pa-2">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="d-block" OnClick="OnSubmit">Add New Shipment</MudButton>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="d-block" OnClick="ShipmentList">Back To List</MudButton>
+        <div class="text-danger">
+            <span>@errorMessage</span>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    ShipmentDto shipment = new ShipmentDto();
+    List<string> lockers = new List<string>();
+    List<string> users = new List<string>();
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.Name == null)
+        {
+            NavigationManager.NavigateTo($"/");
+        }
+
+        IEnumerable<LockerDto>? lockersFromDb = await Http.GetFromJsonAsync<List<LockerDto>>("api/Locker");
+        if(lockersFromDb!=null) {
+            lockers = lockersFromDb.Select(u => u.Name).ToList();
+        }
+        IEnumerable<UserName>? usersFromDb = await Http.GetFromJsonAsync<List<UserName>>("api/User/users-name");
+        if(usersFromDb!=null) {
+            users = usersFromDb.Select(u => u.Name).ToList();
+        }
+    }
+
+    void ShipmentList()
+    {
+        NavigationManager.NavigateTo($"/shipment/list");
+
+    }
+    async Task OnSubmit()
+    {
+        shipment.State = "Posted";
+        var result = await Http.PostAsJsonAsync("api/Shipment/", shipment);
+
+        if (!result.IsSuccessStatusCode)
+        {
+            errorMessage = await result.Content.ReadAsStringAsync();
+            return;
+        }
+
+        NavigationManager.NavigateTo($"/shipment/list");
+    }
+}
